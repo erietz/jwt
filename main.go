@@ -11,9 +11,8 @@ import (
 	"github.com/fatih/color"
 )
 
-
 func decode(s string) []byte {
-	tokenBytes, err := base64.RawStdEncoding.DecodeString(s);
+	tokenBytes, err := base64.RawStdEncoding.DecodeString(s)
 	if err != nil {
 		color.HiRed(s)
 		panic(err)
@@ -35,7 +34,7 @@ func main() {
 		color.HiRed("Usage: %s %s", os.Args[0], "jwt.string.here")
 		os.Exit(1)
 	}
-	
+
 	jwt := os.Args[1]
 
 	parts := strings.Split(jwt, ".")
