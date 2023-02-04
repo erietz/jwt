@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -12,7 +14,7 @@ import (
 )
 
 func decode(s string) []byte {
-	tokenBytes, err := base64.RawStdEncoding.DecodeString(s)
+	tokenBytes, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
 		color.HiRed(s)
 		panic(err)
@@ -27,6 +29,20 @@ func indent(b []byte) string {
 		panic(err)
 	}
 	return s.String()
+}
+
+func hash(header, payload, secret []byte,) string {
+	msg := fmt.Sprintf(
+		"%s.%s",
+		base64.RawURLEncoding.EncodeToString(header),
+		base64.RawURLEncoding.EncodeToString(payload),
+	)
+
+	h := hmac.New(sha256.New, secret)
+	h.Write([]byte(msg))
+
+	sha := h.Sum(nil)
+	return string(sha)
 }
 
 func main() {
@@ -46,11 +62,11 @@ func main() {
 
 	header := decode(parts[0])
 	payload := decode(parts[1])
-	signature := decode(parts[2])
+	signature := parts[2]
 
 	fmt.Printf(
 		"%s.%s.%s\n",
-		color.RedString(parts[0]),
+		color.BlueString(parts[0]),
 		color.MagentaString(parts[1]),
 		color.CyanString(parts[2]),
 	)
@@ -59,8 +75,17 @@ func main() {
 	payloadJSON := indent(payload)
 
 	fmt.Println()
-	color.Red(headerJSON)
+	color.Blue(headerJSON)
 	color.Magenta(payloadJSON)
-	color.Cyan(string(signature))
 
+	checksum := hash(header, payload, []byte("lkjsdlkfjsldkjf"))
+
+	if checksum == string(decode(signature)) {
+		color.Green("Token is valid")
+	} else {
+		color.HiRed("Token is invalid")
+	}
+
+	fmt.Println(checksum)
+	fmt.Println(string(decode(signature)))
 }
