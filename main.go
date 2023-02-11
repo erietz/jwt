@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -13,6 +12,88 @@ import (
 	"github.com/fatih/color"
 )
 
+type Header struct {
+	Alg string
+	Typ string
+}
+
+type Payload map[string]interface{}
+
+type EncodedJWT struct {
+	Header          string
+	Payload         string
+	Signature       string
+	Secret          string
+	IsSecretEncoded bool
+}
+
+func (jwt EncodedJWT) PrettyPrint() {
+	fmt.Printf(
+		"%s.%s.%s\n",
+		color.BlueString(jwt.Header),
+		color.MagentaString(jwt.Payload),
+		color.CyanString(jwt.Signature),
+	)
+}
+
+type JWT struct {
+	Header    Header
+	Payload   Payload
+	Signature string
+}
+
+func (jwt EncodedJWT) Decode() JWT {
+	var header Header
+	err := json.Unmarshal(decode(jwt.Header), &header)
+	if err != nil {
+		panic(err)
+	}
+
+	var payload Payload
+	err = json.Unmarshal(decode(jwt.Payload), &payload)
+	if err != nil {
+		panic(err)
+	}
+
+	return JWT{
+		Header:    header,
+		Payload:   payload,
+		Signature: jwt.GenerateSignature(),
+	}
+}
+
+// TODO: this method shouldn't go on the EncodedJWT since you need to know the
+// algorithm to do the hash which comes from decoding the token...
+func (jwt EncodedJWT) GenerateSignature() string {
+	var secret []byte
+	if jwt.IsSecretEncoded {
+		secret = decode(jwt.Secret)
+	} else {
+		secret = []byte(jwt.Secret)
+	}
+
+	msg := fmt.Sprintf("%s.%s", jwt.Header, jwt.Payload)
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(msg))
+	signedMsg := mac.Sum(nil)
+
+	return base64.RawURLEncoding.EncodeToString(signedMsg)
+}
+
+func (jwt JWT) PrettyPrint() {
+	header, err := json.MarshalIndent(jwt.Header, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	payload, err := json.MarshalIndent(jwt.Payload, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+
+	color.Blue(string(header))
+	color.Magenta(string(payload))
+}
+
 func decode(s string) []byte {
 	tokenBytes, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
@@ -22,70 +103,35 @@ func decode(s string) []byte {
 	return tokenBytes
 }
 
-func indent(b []byte) string {
-	s := &bytes.Buffer{}
-	err := json.Indent(s, b, "", "    ")
-	if err != nil {
-		panic(err)
-	}
-	return s.String()
-}
-
-func hash(header, payload, secret []byte,) string {
-	msg := fmt.Sprintf(
-		"%s.%s",
-		base64.RawURLEncoding.EncodeToString(header),
-		base64.RawURLEncoding.EncodeToString(payload),
-	)
-
-	h := hmac.New(sha256.New, secret)
-	h.Write([]byte(msg))
-
-	sha := h.Sum(nil)
-	return string(sha)
-}
-
 func main() {
 	if len(os.Args) != 2 {
 		color.HiRed("Usage: %s %s", os.Args[0], "jwt.string.here")
 		os.Exit(1)
 	}
 
-	jwt := os.Args[1]
-
-	parts := strings.Split(jwt, ".")
+	parts := strings.Split(os.Args[1], ".")
 
 	if len(parts) != 3 {
 		color.HiRed("Not a valid jwt")
 		os.Exit(1)
 	}
 
-	header := decode(parts[0])
-	payload := decode(parts[1])
-	signature := parts[2]
-
-	fmt.Printf(
-		"%s.%s.%s\n",
-		color.BlueString(parts[0]),
-		color.MagentaString(parts[1]),
-		color.CyanString(parts[2]),
-	)
-
-	headerJSON := indent(header)
-	payloadJSON := indent(payload)
-
-	fmt.Println()
-	color.Blue(headerJSON)
-	color.Magenta(payloadJSON)
-
-	checksum := hash(header, payload, []byte("lkjsdlkfjsldkjf"))
-
-	if checksum == string(decode(signature)) {
-		color.Green("Token is valid")
-	} else {
-		color.HiRed("Token is invalid")
+	encodedJWT := EncodedJWT{
+		Header:          parts[0],
+		Payload:         parts[1],
+		Signature:       parts[2],
+		Secret:          "lkjsdlkfjsldkjf",
+		IsSecretEncoded: false,
 	}
 
-	fmt.Println(checksum)
-	fmt.Println(string(decode(signature)))
+	encodedJWT.PrettyPrint()
+	jwt := encodedJWT.Decode()
+	jwt.PrettyPrint()
+
+	if jwt.Signature == encodedJWT.Signature {
+		color.Green("Signature is verified")
+	} else {
+		color.HiRed("Invalid Signature")
+	}
+
 }
