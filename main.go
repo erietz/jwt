@@ -1,21 +1,47 @@
 package main
 
 import (
+	"flag"
+	"io"
 	"os"
 	"strings"
 
-	"github.com/erietz/jwt/src"
+	jwt "github.com/erietz/jwt/src"
 	"github.com/fatih/color"
 )
 
 
+var secret string
+var isSecretEncoded bool
+
+func init() {
+	const (
+		secretDefault = ""
+		secretUsage = "Secret used to encode the signature"
+		isSecretEncodedDefault = false
+		isSecretEncodedUsage = "If the secret itself is base64 encoded"
+	)
+
+	flag.StringVar(&secret, "s", secretDefault, secretUsage)
+	flag.StringVar(&secret, "secret", secretDefault, secretUsage)
+
+	flag.BoolVar(&isSecretEncoded, "e", isSecretEncodedDefault, isSecretEncodedUsage)
+	flag.BoolVar(&isSecretEncoded, "isSecretEncoded", isSecretEncodedDefault, isSecretEncodedUsage)
+}
+
 func main() {
-	if len(os.Args) != 2 {
-		color.HiRed("Usage: %s %s", os.Args[0], "jwt.string.here")
-		os.Exit(1)
+	flag.Parse()
+
+	inputJWT := flag.Arg(0)
+	if inputJWT == "" {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			panic(err)
+		}
+		inputJWT = strings.TrimSuffix(string(data), "\n")
 	}
 
-	parts := strings.Split(os.Args[1], ".")
+	parts := strings.Split(inputJWT, ".")
 
 	if len(parts) != 3 {
 		color.HiRed("Not a valid jwt")
@@ -26,8 +52,8 @@ func main() {
 		Header:          parts[0],
 		Payload:         parts[1],
 		Signature:       parts[2],
-		Secret:          "lkjsdlkfjsldkjf",
-		IsSecretEncoded: false,
+		Secret:          secret,
+		IsSecretEncoded: isSecretEncoded,
 	}
 
 	token := encodedToken.Decode()

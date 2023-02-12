@@ -21,10 +21,12 @@ type JWT struct {
 
 func (jwt JWT) PrettyPrint() {
 	indent := "    "
+
 	header, err := json.MarshalIndent(jwt.Header, "", indent)
 	if err != nil {
 		panic(err)
 	}
+
 	payload, err := json.MarshalIndent(jwt.Payload, "", indent)
 	if err != nil {
 		panic(err)
