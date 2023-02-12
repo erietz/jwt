@@ -1,10 +1,11 @@
 package jwt
 
 import (
+	"crypto"
+	_ "crypto/sha256" // crypto.SHA256.New fails without this?
+	_ "crypto/sha512" // crypto.SHA384.New and crypto.SHA512.New fails without this?
 	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"fmt"
 )
 
@@ -22,11 +23,17 @@ func hash(header, payload, secret []byte, alg string) (string, error) {
 
 	switch alg {
 	case "HS256":
-		mac := hmac.New(sha256.New, secret)
+		mac := hmac.New(crypto.SHA256.New, secret)
 		mac.Write([]byte(msg))
 		signedMsg = mac.Sum(nil)
-	case "RS256":
-		return "", errors.New("RS256 coming soon")
+	case "HS384":
+		mac := hmac.New(crypto.SHA384.New, secret)
+		mac.Write([]byte(msg))
+		signedMsg = mac.Sum(nil)
+	case "HS512":
+		mac := hmac.New(crypto.SHA512.New, secret)
+		mac.Write([]byte(msg))
+		signedMsg = mac.Sum(nil)
 	default:
 		return "", fmt.Errorf("Algorithms %s not implemented", alg)
 	}
