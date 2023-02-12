@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -58,7 +59,9 @@ func main() {
 
 	token := encodedToken.Decode()
 
+	fmt.Println()
 	encodedToken.PrettyPrint()
+	fmt.Println()
 	token.PrettyPrint()
 
 	if token.Signature == encodedToken.Signature {
@@ -66,5 +69,6 @@ func main() {
 	} else {
 		color.HiRed("Invalid Signature")
 	}
+	fmt.Println()
 
 }
