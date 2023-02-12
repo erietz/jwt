@@ -11,16 +11,15 @@ import (
 	"github.com/fatih/color"
 )
 
-
 var secret string
 var isSecretEncoded bool
 
 func init() {
 	const (
-		secretDefault = ""
-		secretUsage = "Secret used to encode the signature"
+		secretDefault          = ""
+		secretUsage            = "Secret used to encode the signature"
 		isSecretEncodedDefault = false
-		isSecretEncodedUsage = "If the secret itself is base64 encoded"
+		isSecretEncodedUsage   = "If the secret itself is base64 encoded"
 	)
 
 	flag.StringVar(&secret, "s", secretDefault, secretUsage)

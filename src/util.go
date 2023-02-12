@@ -2,9 +2,9 @@ package jwt
 
 import (
 	"crypto"
+	"crypto/hmac"
 	_ "crypto/sha256" // crypto.SHA256.New fails without this?
 	_ "crypto/sha512" // crypto.SHA384.New and crypto.SHA512.New fails without this?
-	"crypto/hmac"
 	"encoding/base64"
 	"fmt"
 )
