@@ -57,17 +57,10 @@ func main() {
 	}
 
 	token := encodedToken.Decode()
+	fmt.Println(token)
 
-	fmt.Println()
-	encodedToken.PrettyPrint()
-	fmt.Println()
-	token.PrettyPrint()
-
-	if token.Signature == encodedToken.Signature {
-		color.Green("Signature is verified")
-	} else {
-		color.HiRed("Invalid Signature")
+	if token.Signature != encodedToken.Signature {
+		fmt.Fprintln(os.Stderr, "Signature is invalid")
 	}
-	fmt.Println()
 
 }

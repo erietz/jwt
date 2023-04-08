@@ -2,36 +2,40 @@ package jwt
 
 import (
 	"encoding/json"
+	"os"
 
-	"github.com/fatih/color"
+	"github.com/hokaccha/go-prettyjson"
+	"github.com/mattn/go-isatty"
 )
 
 type header struct {
-	Alg string
-	Typ string
+	Alg string `json:"alg"`
+	Typ string `json:"typ"`
 }
 
 type payload map[string]interface{}
 
 type JWT struct {
-	Header    header
-	Payload   payload
-	Signature string
+	Header    header  `json:"header"`
+	Payload   payload `json:"payload"`
+	Signature string  `json:"signature"`
 }
 
-func (jwt JWT) PrettyPrint() {
-	indent := "    "
+func (jwt JWT) String() string {
+	var token []byte
+	var err error
 
-	header, err := json.MarshalIndent(jwt.Header, "", indent)
-	if err != nil {
-		panic(err)
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		token, err = prettyjson.Marshal(jwt)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		token, err = json.MarshalIndent(jwt, "", "    ")
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	payload, err := json.MarshalIndent(jwt.Payload, "", indent)
-	if err != nil {
-		panic(err)
-	}
-
-	color.Blue(string(header))
-	color.Magenta(string(payload))
+	return string(token)
 }
